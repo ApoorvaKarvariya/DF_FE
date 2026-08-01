@@ -191,6 +191,82 @@ function GlobalStyles({ dark }) {
         font-size: 12px;
         font-weight: 500;
       }
+
+      /* ─── Responsive grids ────────────────────────────────────────────── */
+      .g-2   { display: grid; grid-template-columns: 1fr 1fr; }
+      .g-3   { display: grid; grid-template-columns: 1fr 1fr 1fr; }
+      .g-4   { display: grid; grid-template-columns: repeat(4, 1fr); }
+      .g-5   { display: grid; grid-template-columns: repeat(5, 1fr); }
+      .g-21  { display: grid; grid-template-columns: 2fr 1fr; }
+      .g-12  { display: grid; grid-template-columns: 1fr 2fr; }
+      .g-sb1 { display: grid; grid-template-columns: 240px 1fr; }
+      .g-sb2 { display: grid; grid-template-columns: 320px 1fr; }
+      .g-sb3 { display: grid; grid-template-columns: 280px 1fr; }
+
+      /* ─── Layout ──────────────────────────────────────────────────────── */
+      .app-shell { display: flex; }
+      .main-content { margin-left: 220px; flex: 1; min-width: 0; min-height: 100vh; background: var(--bg); }
+      .page-wrap { padding: 32px 40px; max-width: 1100px; }
+      .page-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 28px; }
+
+      .mobile-topbar { display: none; }
+      .sidebar-overlay { display: none; }
+
+      /* Tablet */
+      @media (max-width: 900px) {
+        .g-sb1, .g-sb2, .g-sb3, .g-21, .g-12 { grid-template-columns: 1fr; }
+        .g-5, .g-4 { grid-template-columns: repeat(2, 1fr); }
+      }
+
+      /* Mobile: collapse sidebar into an off-canvas drawer with hamburger topbar */
+      @media (max-width: 768px) {
+        .app-shell { display: block; }
+
+        .sidebar {
+          transform: translateX(-100%);
+          transition: transform 0.25s ease;
+          box-shadow: none;
+        }
+        .sidebar.open {
+          transform: translateX(0);
+          box-shadow: 0 0 32px rgba(0,0,0,0.4);
+        }
+
+        .sidebar-overlay {
+          display: block;
+          position: fixed;
+          inset: 0;
+          background: rgba(0,0,0,0.5);
+          z-index: 99;
+          opacity: 0;
+          pointer-events: none;
+          transition: opacity 0.25s ease;
+        }
+        .sidebar-overlay.open { opacity: 1; pointer-events: auto; }
+
+        .mobile-topbar {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 14px 16px;
+          border-bottom: 1px solid var(--border);
+          background: var(--bg2);
+          position: sticky;
+          top: 0;
+          z-index: 50;
+        }
+
+        .main-content { margin-left: 0; }
+        .page-wrap { padding: 20px 16px; max-width: 100%; }
+        .page-header { flex-direction: column; align-items: stretch; }
+        .page-header h1 { font-size: 21px; }
+      }
+
+      /* Small phones */
+      @media (max-width: 480px) {
+        .g-2, .g-3, .g-4, .g-5 { grid-template-columns: 1fr; }
+        .page-wrap { padding: 16px 12px; }
+      }
     `}</style>
   );
 }
@@ -248,7 +324,7 @@ function StatCard({ label, value, sub, icon, color = "var(--primary)", accent })
 }
 
 // ─── Sidebar Nav ─────────────────────────────────────────────────────────────
-function Sidebar({ page, setPage, dark, setDark, onLogout }) {
+function Sidebar({ page, setPage, dark, setDark, onLogout, mobileOpen, closeMobile }) {
   const nav = [
     { id: "dashboard", label: "Dashboard", icon: "dashboard" },
     { id: "interviews", label: "Mock Interviews", icon: "brain" },
@@ -263,7 +339,9 @@ function Sidebar({ page, setPage, dark, setDark, onLogout }) {
   ];
 
   return (
-    <aside style={{
+    <>
+    <div className={`sidebar-overlay${mobileOpen ? " open" : ""}`} onClick={closeMobile} />
+    <aside className={`sidebar${mobileOpen ? " open" : ""}`} style={{
       width: 220, minHeight: "100vh", background: "var(--bg2)",
       borderRight: "1px solid var(--border)", display: "flex", flexDirection: "column",
       position: "fixed", top: 0, left: 0, zIndex: 100, padding: "20px 0",
@@ -291,7 +369,7 @@ function Sidebar({ page, setPage, dark, setDark, onLogout }) {
         {nav.map(({ id, label, icon }) => {
           const active = page === id;
           return (
-            <button key={id} onClick={() => setPage(id)} style={{
+            <button key={id} onClick={() => { setPage(id); closeMobile && closeMobile(); }} style={{
               display: "flex", alignItems: "center", gap: 10, width: "100%",
               padding: "9px 12px", borderRadius: 10, marginBottom: 2, border: "none",
               background: active ? "linear-gradient(135deg, rgba(99,102,241,0.2), rgba(34,211,238,0.1))" : "transparent",
@@ -318,19 +396,20 @@ function Sidebar({ page, setPage, dark, setDark, onLogout }) {
         </button>
       </div>
     </aside>
+    </>
   );
 }
 
 // ─── Page Wrapper ─────────────────────────────────────────────────────────────
 function Page({ title, sub, actions, children }) {
   return (
-    <div className="fade-in" style={{ padding: "32px 40px", maxWidth: 1100 }}>
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 28 }}>
+    <div className="fade-in page-wrap">
+      <div className="page-header">
         <div>
           <h1 style={{ fontSize: 26, fontWeight: 700, marginBottom: 4 }}>{title}</h1>
           {sub && <p style={{ color: "var(--muted)", fontSize: 14 }}>{sub}</p>}
         </div>
-        {actions && <div style={{ display: "flex", gap: 8 }}>{actions}</div>}
+        {actions && <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>{actions}</div>}
       </div>
       {children}
     </div>
@@ -374,10 +453,10 @@ function AuthPage({ onAuth }) {
   return (
     <div style={{
       minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center",
-      background: "var(--bg)",
+      background: "var(--bg)", padding: 16, boxSizing: "border-box",
       backgroundImage: "radial-gradient(ellipse at 20% 50%, rgba(99,102,241,0.12) 0%, transparent 60%), radial-gradient(ellipse at 80% 20%, rgba(34,211,238,0.08) 0%, transparent 50%)",
     }}>
-      <div className="card fade-in" style={{ width: 420, padding: 36 }}>
+      <div className="card fade-in" style={{ width: "100%", maxWidth: 420, padding: 36 }}>
         <div style={{ textAlign: "center", marginBottom: 28 }}>
           <div style={{
             width: 52, height: 52, borderRadius: 14,
@@ -461,8 +540,8 @@ function Dashboard() {
     >
       {/* Study Plan Modal */}
       {showPlan && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 300 }} onClick={() => setShowPlan(false)}>
-          <div className="card fade-in" style={{ width: 560, maxHeight: "80vh", display: "flex", flexDirection: "column" }} onClick={e => e.stopPropagation()}>
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 300, padding: 16, boxSizing: "border-box" }} onClick={() => setShowPlan(false)}>
+          <div className="card fade-in" style={{ width: "100%", maxWidth: 560, maxHeight: "80vh", display: "flex", flexDirection: "column" }} onClick={e => e.stopPropagation()}>
             <div style={{ padding: "20px 24px", borderBottom: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <p style={{ fontWeight: 700, fontSize: 16 }}>📋 Your 7-Day Study Plan</p>
               <button onClick={() => setShowPlan(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--muted)" }}><Icon name="x" size={18} /></button>
@@ -475,7 +554,7 @@ function Dashboard() {
       )}
 
       {/* Readiness Orb + Stats grid */}
-      <div style={{ display: "grid", gridTemplateColumns: "240px 1fr", gap: 20, marginBottom: 20 }}>
+      <div className="g-sb1" style={{ gap: 20, marginBottom: 20 }}>
         {/* Readiness Orb — signature element, click to see study plan */}
         <div className="card" style={{ padding: 24, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gridRow: "span 2", cursor: "pointer" }}
           onClick={() => setShowPlan(true)}
@@ -511,13 +590,13 @@ function Dashboard() {
         </div>
 
         {/* Top stats */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+        <div className="g-3" style={{ gap: 12 }}>
           <StatCard label="LC Acceptance" value={data?.leetcodeAcceptanceRate != null ? `${data.leetcodeAcceptanceRate}%` : null} sub="Accepted submissions" icon="trophy" color="var(--amber)" />
           <StatCard label="LC Rating" value={data?.leetcodeRating} sub={data?.leetcodeRank} icon="zap" color="var(--cyan)" />
           <StatCard label="ATS Score" value={data?.atsScore ? `${data.atsScore}%` : null} sub="Resume strength" icon="file" color="var(--green)" />
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+        <div className="g-3" style={{ gap: 12 }}>
           <StatCard label="Streak" value={`${data?.currentStreak ?? 0}d`} sub={`LC streak: ${data?.leetcodeStreak ?? 0}d`} icon="zap" color="#f472b6" />
           <StatCard label="Interviews" value={`${data?.completedInterviews}/${data?.totalInterviews}`} sub={`Avg score: ${data?.averageInterviewScore?.toFixed(1) ?? "—"}`} icon="brain" color="var(--primary)" />
           <StatCard label="Saved Qs" value={data?.totalSavedQuestions} sub="Question bank" icon="bookmark" color="var(--cyan)" />
@@ -660,7 +739,7 @@ function Interviews() {
 
         {!feedback ? (
           active.mode === "VIDEO" ? (
-            <div style={{ display: "grid", gridTemplateColumns: "320px 1fr", gap: 16 }}>
+            <div className="g-sb2" style={{ gap: 16 }}>
               {/* Webcam preview */}
               <div className="card" style={{ padding: 16 }}>
                 <div style={{ position: "relative", borderRadius: 10, overflow: "hidden", background: "#000", aspectRatio: "4/3" }}>
@@ -712,7 +791,7 @@ function Interviews() {
             </div>
           )
         ) : (
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+          <div className="g-2" style={{ gap: 16 }}>
             <div className="card" style={{ padding: 24, borderColor: "rgba(99,102,241,0.4)", gridColumn: "span 2" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
                 <div style={{ fontSize: 36, fontWeight: 700, fontFamily: "'JetBrains Mono',monospace", color: feedback.score >= 70 ? "var(--green)" : "var(--amber)" }}>{feedback.score}</div>
@@ -747,8 +826,8 @@ function Interviews() {
     >
       {/* Modal */}
       {modal && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200 }} onClick={() => setModal(false)}>
-          <div className="card fade-in" style={{ width: 400, padding: 28 }} onClick={e => e.stopPropagation()}>
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200, padding: 16, boxSizing: "border-box" }} onClick={() => setModal(false)}>
+          <div className="card fade-in" style={{ width: "100%", maxWidth: 400, padding: 28 }} onClick={e => e.stopPropagation()}>
             <p style={{ fontWeight: 700, fontSize: 18, marginBottom: 20 }}>Start Interview</p>
             <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 20 }}>
               <input className="input" placeholder="Target Company (e.g. Google)" value={form.targetCompany} onChange={e => setForm({ ...form, targetCompany: e.target.value })} />
@@ -839,7 +918,7 @@ function Questions() {
 
   return (
     <Page title="Question Bank" sub="Browse and save interview questions">
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 20 }}>
+      <div className="g-3" style={{ gap: 10, marginBottom: 20 }}>
         <input className="input" placeholder="🔍  Search questions..." value={filter.search} onChange={e => setFilter({ ...filter, search: e.target.value })} />
         <select className="select" value={filter.difficulty} onChange={e => setFilter({ ...filter, difficulty: e.target.value })}>
           <option value="">All Difficulties</option>
@@ -950,14 +1029,14 @@ function Analytics() {
 
   return (
     <Page title="Analytics" sub="Track your interview performance over time">
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, marginBottom: 20 }}>
+      <div className="g-4" style={{ gap: 14, marginBottom: 20 }}>
         <StatCard label="Sessions" value={summary?.totalSessions} icon="brain" color="var(--primary)" />
         <StatCard label="Avg Score" value={summary?.avgScore?.toFixed(1)} icon="chart" color="var(--cyan)" />
         <StatCard label="Improvement" value={summary?.improvement} icon="zap" color="var(--green)" />
         <StatCard label="Top Category" value={summary?.topCategory} icon="trophy" color="var(--amber)" />
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 16 }}>
+      <div className="g-21" style={{ gap: 16 }}>
         <div className="card" style={{ padding: 24 }}>
           <p style={{ fontWeight: 600, marginBottom: 16 }}>Score Trend</p>
           <canvas ref={canvasRef} width={580} height={200} style={{ width: "100%", height: 200 }} />
@@ -1026,7 +1105,7 @@ function Resume() {
 
   return (
     <Page title="Resume Analyzer" sub="AI-powered ATS scoring and feedback">
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: 20 }}>
+      <div className="g-12" style={{ gap: 20 }}>
         {/* Score + Upload */}
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           <div className="card" style={{ padding: 28, textAlign: "center" }}>
@@ -1205,7 +1284,7 @@ function CodeRunner() {
     <Page title="Code Runner" sub="Execute code in multiple languages"
       actions={<button className="btn-primary" onClick={run} disabled={running} style={{ display: "flex", alignItems: "center", gap: 6 }}><Icon name="play" size={14} />{running ? "Running..." : "Run Code"}</button>}
     >
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+      <div className="g-2" style={{ gap: 16 }}>
         <div className="card" style={{ padding: 0, overflow: "hidden" }}>
           <div style={{ padding: "12px 16px", borderBottom: "1px solid var(--border)", display: "flex", gap: 8, alignItems: "center" }}>
             {langs.map(l => (
@@ -1295,7 +1374,7 @@ function LeetCode() {
     <Page title="LeetCode" sub="Problem solving stats"
       actions={<button className="btn-ghost" onClick={sync} disabled={syncLoading} style={{ display: "flex", alignItems: "center", gap: 6 }}><Icon name="refresh" size={14} />{syncLoading ? "Syncing..." : "Sync"}</button>}
     >
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr", gap: 14, marginBottom: 20 }}>
+      <div className="g-5" style={{ gap: 14, marginBottom: 20 }}>
         <StatCard label="Total Solved" value={data?.totalSolved} icon="check" color="var(--primary)" />
         <StatCard label="Global Rank" value={data?.ranking?.toLocaleString()} icon="trophy" color="var(--amber)" />
         <StatCard label="Acceptance" value={`${data?.acceptanceRate ?? 0}%`} icon="chart" color="var(--cyan)" />
@@ -1421,7 +1500,7 @@ function GitHub() {
         </button>
       }
     >
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, marginBottom: 20 }}>
+      <div className="g-4" style={{ gap: 14, marginBottom: 20 }}>
         <StatCard label="Repos" value={data?.publicRepos ?? data?.githubRepos} icon="code" color="var(--primary)" />
         <StatCard label="Contributions" value={data?.totalContributions ?? data?.githubContributions} icon="zap" color="var(--green)" />
         <StatCard label="Followers" value={data?.followers} icon="user" color="var(--cyan)" />
@@ -1600,7 +1679,7 @@ function Profile() {
       }
     >
       {saveError && <p style={{ color: "var(--red)", fontSize: 13, marginBottom: 12 }}>{saveError}</p>}
-      <div style={{ display: "grid", gridTemplateColumns: "280px 1fr", gap: 20 }}>
+      <div className="g-sb3" style={{ gap: 20 }}>
 
         {/* Avatar card */}
         <div className="card" style={{ padding: 28, textAlign: "center" }}>
@@ -1657,7 +1736,7 @@ function Profile() {
         {/* Edit form / view */}
         <div className="card" style={{ padding: 28 }}>
           <p style={{ fontWeight: 600, marginBottom: 20 }}>Account Details</p>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+          <div className="g-2" style={{ gap: 14 }}>
             {editing ? (
               fields.map(([key, label, col]) => (
                 <div key={key} style={{ gridColumn: col }}>
@@ -1699,6 +1778,7 @@ export default function App() {
   const [dark, setDark] = useState(true);
   const [token, setTokenState] = useState(() => localStorage.getItem("devforge_token"));
   const [page, setPage] = useState("dashboard");
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   const setToken = (t) => {
     if (t) localStorage.setItem("devforge_token", t);
@@ -1734,9 +1814,32 @@ export default function App() {
     <ThemeCtx.Provider value={{ dark, setDark }}>
       <AuthCtx.Provider value={{ token }}>
         <GlobalStyles dark={dark} />
-        <div style={{ display: "flex" }}>
-          <Sidebar page={page} setPage={setPage} dark={dark} setDark={setDark} onLogout={() => setToken(null)} />
-          <main style={{ marginLeft: 220, flex: 1, minHeight: "100vh", background: "var(--bg)" }}>
+        <div className="app-shell">
+          <Sidebar
+            page={page}
+            setPage={setPage}
+            dark={dark}
+            setDark={setDark}
+            onLogout={() => setToken(null)}
+            mobileOpen={mobileNavOpen}
+            closeMobile={() => setMobileNavOpen(false)}
+          />
+          <main className="main-content">
+            <div className="mobile-topbar">
+              <button
+                className="btn-ghost"
+                aria-label="Open menu"
+                onClick={() => setMobileNavOpen(true)}
+                style={{ padding: "8px 10px", display: "flex", alignItems: "center", justifyContent: "center" }}
+              >
+                <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" fill="none" strokeWidth="2" strokeLinecap="round">
+                  <line x1="3" y1="6" x2="21" y2="6" />
+                  <line x1="3" y1="12" x2="21" y2="12" />
+                  <line x1="3" y1="18" x2="21" y2="18" />
+                </svg>
+              </button>
+              <p style={{ fontSize: 15, fontWeight: 700 }}>DevForge</p>
+            </div>
             {pages[page] || <Dashboard />}
           </main>
         </div>
